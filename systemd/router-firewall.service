@@ -1,0 +1,15 @@
+[Unit]
+Description=Router NAT and TPROXY Firewall (nftables)
+After=network-online.target
+Wants=network-online.target
+Before=router-ap.service router-dns.service router-xray.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/nftables.d/router.nft
+ExecReload=/usr/sbin/nft -f /etc/nftables.d/router.nft
+ExecStop=/usr/sbin/nft flush ruleset
+
+[Install]
+WantedBy=multi-user.target

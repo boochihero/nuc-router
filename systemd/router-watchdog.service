@@ -1,0 +1,10 @@
+[Unit]
+Description=Router Watchdog Health Check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/router-watchdog.sh
+StandardOutput=journal
+StandardError=journal

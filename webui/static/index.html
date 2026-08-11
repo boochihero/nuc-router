@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUC Router WebUI</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --card: #0f3460;
+  --accent: #e94560;
+  --text: #eee;
+  --text-muted: #999;
+  --border: #333;
+  --green: #00c853;
+  --red: #ff1744;
+  --yellow: #ffd600;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+header {
+  background: var(--surface);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+header h1 { font-size: 1.2rem; color: var(--accent); }
+nav { display:flex; gap:4px; }
+nav button {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: 4px 4px 0 0;
+  transition: background .2s;
+}
+nav button.active { background: var(--bg); border-bottom-color: var(--bg); color: var(--accent); }
+nav button:hover { background: var(--accent); color: #fff; }
+main { padding: 20px; max-width: 960px; margin: 0 auto; }
+.tab { display: none; }
+.tab.active { display: block; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card h2 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.col { flex: 1; min-width: 200px; }
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-right: 8px;
+}
+.badge.green { background: var(--green); color: #000; }
+.badge.red { background: var(--red); color: #fff; }
+label { display: block; margin-bottom: 4px; font-size: 0.85rem; color: var(--text-muted); }
+input, select, textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+textarea { min-height: 120px; resize: vertical; font-family: monospace; }
+button {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin: 4px 4px 4px 0;
+  transition: opacity .2s;
+}
+button:hover { opacity: 0.9; }
+button.secondary { background: var(--card); }
+button.danger { background: var(--red); }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-muted); font-weight: 600; }
+pre { background: var(--bg); padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem; max-height: 400px; overflow-y: auto; }
+.log-box { max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; }
+.status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.status-indicator.on { background: var(--green); }
+.status-indicator.off { background: var(--red); }
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+.toggle-switch input { display: none; }
+.slider {
+  position: absolute;
+  inset: 0;
+  background: var(--card);
+  border-radius: 28px;
+  cursor: pointer;
+  transition: .3s;
+}
+.slider::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: .3s;
+}
+input:checked + .slider { background: var(--accent); }
+input:checked + .slider::before { transform: translateX(24px); }
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity .3s;
+  z-index: 99;
+}
+.toast.show { opacity: 1; }
+.toast.success { background: var(--green); color: #000; }
+.toast.error { background: var(--red); color: #fff; }
+.auth-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+}
+.auth-box {
+  background: var(--surface);
+  padding: 32px;
+  border-radius: 8px;
+  text-align: center;
+  width: 340px;
+}
+.auth-box h2 { margin-bottom: 16px; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="authLayer" class="auth-modal">
+  <div class="auth-box">
+    <h2>NUC Router WebUI</h2>
+    <p style="margin-bottom:16px; color:var(--text-muted);">Enter access token</p>
+    <input type="password" id="tokenInput" placeholder="Auth token" autofocus>
+    <br>
+    <button onclick="auth()">Login</button>
+    <p id="authError" style="color:var(--red);margin-top:8px;"></p>
+  </div>
+</div>
+
+<header>
+  <h1>NUC Router</h1>
+  <nav>
+    <button class="active" onclick="switchTab('status')">Status</button>
+    <button onclick="switchTab('proxy')">Proxy</button>
+    <button onclick="switchTab('hotspot')">Hotspot</button>
+  </nav>
+</header>
+
+<main>
+<div id="tab-status" class="tab active">
+  <div class="card">
+    <h2>System Overview</h2>
+    <div class="row">
+      <div class="col">
+        <label>WAN IP</label>
+        <p style="font-size:1.1rem;font-weight:700;" id="status-wan">-</p>
+      </div>
+      <div class="col">
+        <label>WiFi AP</label>
+        <p><span id="badge-ap"></span></p>
+      </div>
+      <div class="col">
+        <label>Xray Proxy</label>
+        <p><span id="badge-xray"></span></p>
+      </div>
+      <div class="col">
+        <label>Proxy Switch</label>
+        <p><span id="badge-proxy"></span></p>
+      </div>
+      <div class="col">
+        <label>Connected Clients</label>
+        <p style="font-size:1.1rem;font-weight:700;" id="status-clients">-</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Connected Clients</h2>
+    <table id="clients-table">
+      <thead><tr><th>MAC</th><th>IP</th><th>Signal</th></tr></thead>
+      <tbody><tr><td colspan="3" style="color:var(--text-muted);">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Backup & Rollback</h2>
+    <button onclick="apiPost('/api/backup')">Create Backup</button>
+    <button class="danger" onclick="if(confirm('Rollback to last backup?'))apiPost('/api/rollback')">Rollback</button>
+  </div>
+</div>
+
+<div id="tab-proxy" class="tab">
+  <div class="card">
+    <h2>Proxy Switch</h2>
+    <div class="row">
+      <div class="col">
+        <label class="toggle-switch">
+          <input type="checkbox" id="proxyToggle" onchange="toggleProxy(this.checked)">
+          <span class="slider"></span>
+        </label>
+        <span id="proxyToggleLabel" style="margin-left:8px;">Disabled</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Subscription Import</h2>
+    <label>Subscribe URL or paste Clash YAML</label>
+    <div class="row">
+      <div class="col" style="flex:3;">
+        <input type="text" id="subUrl" placeholder="https://example.com/sub/clash.yaml">
+      </div>
+      <div class="col" style="flex:1;">
+        <button onclick="subscribeAdd()">Add URL</button>
+      </div>
+    </div>
+    <p style="color:var(--text-muted);margin-bottom:8px;">Or paste YAML directly in the box below:</p>
+    <textarea id="importYaml" placeholder="Paste Clash YAML here..."></textarea>
+    <button onclick="importPreview()">Preview Nodes</button>
+  </div>
+
+  <div class="card">
+    <h2>Saved Subscriptions</h2>
+    <div id="subList"></div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none;">
+    <h2>Node Preview</h2>
+    <div id="previewList"></div>
+    <button onclick="importConfirm()" style="margin-top:8px;">Import Selected</button>
+  </div>
+
+  <div class="card">
+    <h2>Xray Nodes</h2>
+    <div id="nodeList"></div>
+    <button onclick="proxyTest()">Test Connectivity</button>
+    <span id="testResult" style="margin-left:8px;font-size:0.85rem;"></span>
+  </div>
+</div>
+
+<div id="tab-hotspot" class="tab">
+  <div class="card">
+    <h2>Hotspot Settings</h2>
+    <label>SSID</label>
+    <input type="text" id="hs-ssid">
+    <label>Password (8+ chars)</label>
+    <input type="password" id="hs-password" minlength="8">
+    <label>Channel</label>
+    <input type="number" id="hs-channel" min="36" max="165" value="149">
+    <button onclick="saveHotspot()">Save & Restart AP</button>
+  </div>
+
+  <div class="card">
+    <h2>Service Logs</h2>
+    <label>Select Service</label>
+    <select id="logService" style="width:auto;" onchange="loadLogs()">
+      <option value="router-ap">router-ap</option>
+      <option value="router-dns">router-dns</option>
+      <option value="router-xray">router-xray</option>
+      <option value="router-firewall">router-firewall</option>
+      <option value="router-webui">router-webui</option>
+    </select>
+    <div class="log-box" id="logBox" style="margin-top:8px;">Select a service to view logs</div>
+  </div>
+</div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let TOKEN = '';
+
+function auth() {
+  TOKEN = document.getElementById('tokenInput').value;
+  fetch('/api/status', {headers:{'X-Auth-Token':TOKEN}})
+    .then(r => {
+      if (r.ok) { document.getElementById('authLayer').style.display = 'none'; refreshAll(); }
+      else { document.getElementById('authError').textContent = 'Invalid token'; }
+    })
+    .catch(() => { document.getElementById('authError').textContent = 'Connection error'; });
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function apiGet(path) {
+  const r = await fetch(path, {headers:{'X-Auth-Token':TOKEN}});
+  if (r.status === 403) { document.getElementById('authLayer').style.display = 'flex'; throw new Error('auth'); }
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function apiPost(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json', 'X-Auth-Token':TOKEN},
+    body: JSON.stringify(body || {})
+  });
+  if (r.status === 403) { document.getElementById('authLayer').style.display = 'flex'; throw new Error('auth'); }
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+
+async function apiPut(path, body) {
+  const r = await fetch(path, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json', 'X-Auth-Token':TOKEN},
+    body: JSON.stringify(body || {})
+  });
+  if (r.status === 403) { document.getElementById('authLayer').style.display = 'flex'; throw new Error('auth'); }
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || r.statusText);
+  return data;
+}
+
+async function apiDelete(path) {
+  const r = await fetch(path, {
+    method: 'DELETE',
+    headers: {'X-Auth-Token':TOKEN}
+  });
+  if (r.status === 403) { document.getElementById('authLayer').style.display = 'flex'; throw new Error('auth'); }
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => {
+    if (b.textContent.toLowerCase().includes(name)) b.classList.add('active');
+  });
+  if (name === 'status') { refreshStatus(); refreshClients(); }
+  if (name === 'proxy') { refreshProxy(); refreshSubs(); }
+  if (name === 'hotspot') { refreshHotspot(); }
+}
+
+async function refreshStatus() {
+  try {
+    const d = await apiGet('/api/status');
+    document.getElementById('status-wan').textContent = d.wan_ip || 'No IP';
+    document.getElementById('status-clients').textContent = d.client_count;
+    const apB = document.getElementById('badge-ap');
+    apB.innerHTML = d.ap_active
+      ? '<span class="badge green">Active</span>'
+      : '<span class="badge red">Down</span>';
+    const xrB = document.getElementById('badge-xray');
+    xrB.innerHTML = d.xray_active
+      ? '<span class="badge green">Running</span>'
+      : '<span class="badge red">Stopped</span>';
+    const pxB = document.getElementById('badge-proxy');
+    pxB.innerHTML = d.proxy_enabled
+      ? '<span class="badge green">ON</span>'
+      : '<span class="badge red">OFF</span>';
+  } catch(e) { console.error(e); }
+}
+
+async function refreshClients() {
+  try {
+    const d = await apiGet('/api/clients');
+    const tbody = document.querySelector('#clients-table tbody');
+    if (!d.clients || d.clients.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted);">No clients connected</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d.clients.map(c =>
+      `<tr><td>${c.mac||'-'}</td><td>${c.ip||'-'}</td><td>${c.signal||'-'}</td></tr>`
+    ).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function refreshProxy() {
+  try {
+    const d = await apiGet('/api/proxy');
+    const tgl = document.getElementById('proxyToggle');
+    tgl.checked = d.proxy_enabled;
+    document.getElementById('proxyToggleLabel').textContent = d.proxy_enabled ? 'Enabled' : 'Disabled';
+    renderNodes(d.nodes);
+  } catch(e) { console.error(e); }
+}
+
+function renderNodes(nodes) {
+  const el = document.getElementById('nodeList');
+  el.innerHTML = nodes.map(n =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+      <span class="status-indicator ${n.active?'on':'off'}"></span>
+      <span style="flex:1;"><b>${n.tag||'unknown'}</b> (${n.protocol||'-'})</span>
+      <button onclick="activateNode('${n.id||n.tag}')">Activate</button>
+    </div>`
+  ).join('');
+}
+
+async function activateNode(id) {
+  try {
+    await apiPost('/api/proxy/node/' + id + '/activate');
+    showToast('Node activated', 'success');
+    refreshProxy();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function toggleProxy(on) {
+  try {
+    await apiPost('/api/proxy/toggle', {action: on ? 'on' : 'off'});
+    document.getElementById('proxyToggleLabel').textContent = on ? 'Enabled' : 'Disabled';
+    showToast('Proxy ' + (on ? 'enabled' : 'disabled'), 'success');
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+    document.getElementById('proxyToggle').checked = !on;
+  }
+}
+
+async function proxyTest() {
+  try {
+    document.getElementById('testResult').textContent = 'Testing...';
+    const d = await apiPost('/api/proxy/test');
+    document.getElementById('testResult').textContent = d.success ? 'OK' : 'Fail: ' + (d.error||'timeout');
+  } catch(e) { document.getElementById('testResult').textContent = 'Error: ' + e.message; }
+}
+
+async function refreshHotspot() {
+  try {
+    const d = await apiGet('/api/config/hotspot');
+    const c = d.config || {};
+    document.getElementById('hs-ssid').value = c.ssid || '';
+    document.getElementById('hs-password').value = '';
+    document.getElementById('hs-channel').value = c.channel || '149';
+  } catch(e) { console.error(e); }
+}
+
+async function saveHotspot() {
+  try {
+    const body = {};
+    const ssid = document.getElementById('hs-ssid').value;
+    const password = document.getElementById('hs-password').value;
+    const channel = document.getElementById('hs-channel').value;
+    if (ssid) body.ssid = ssid;
+    if (password) body.password = password;
+    if (channel) body.channel = parseInt(channel);
+    await apiPost('/api/config/hotspot', body);
+    showToast('Hotspot config saved, AP restarting', 'success');
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function loadLogs() {
+  const svc = document.getElementById('logService').value;
+  try {
+    const d = await apiGet('/api/logs/' + svc + '?lines=80');
+    document.getElementById('logBox').textContent = d.logs || 'No logs';
+  } catch(e) { document.getElementById('logBox').textContent = 'Error: ' + e.message; }
+}
+
+let importNodes = [];
+
+async function subscribeAdd() {
+  const url = document.getElementById('subUrl').value.trim();
+  if (!url) return showToast('Enter a URL', 'error');
+  try {
+    await apiPost('/api/subscription', {url});
+    showToast('Subscription added', 'success');
+    document.getElementById('subUrl').value = '';
+    refreshSubs();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function refreshSubs() {
+  try {
+    const d = await apiGet('/api/subscription');
+    const subs = d.subscriptions || [];
+    const el = document.getElementById('subList');
+    if (subs.length === 0) {
+      el.innerHTML = '<p style="color:var(--text-muted);">No subscriptions saved</p>';
+      return;
+    }
+    el.innerHTML = subs.map(s =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+        <span style="flex:1;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${s.url}">${s.name||s.url}</span>
+        <button class="secondary" onclick="subRefresh('${s.id}')">Refresh</button>
+        <button class="secondary" onclick="subImport('${s.id}')">Preview</button>
+        <button class="secondary danger" onclick="subDelete('${s.id}')">Del</button>
+      </div>`
+    ).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function subRefresh(id) {
+  try { await apiPost('/api/subscription/' + id + '/refresh'); showToast('Refreshed', 'success'); } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function subImport(id) {
+  try {
+    const d = await apiPost('/api/proxy/import', {subscription_id: id});
+    showPreview(d.nodes);
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function subDelete(id) {
+  if (!confirm('Delete this subscription?')) return;
+  try { await apiDelete('/api/subscription/' + id); showToast('Deleted', 'success'); refreshSubs(); } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+async function importPreview() {
+  const yaml = document.getElementById('importYaml').value.trim();
+  if (!yaml) return showToast('Paste YAML content', 'error');
+  try {
+    const d = await apiPost('/api/proxy/import', {yaml});
+    showPreview(d.nodes);
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+function showPreview(nodes) {
+  importNodes = nodes;
+  const card = document.getElementById('previewCard');
+  const list = document.getElementById('previewList');
+  card.style.display = 'block';
+  list.innerHTML = nodes.map((n, i) => {
+    const sup = n.supported !== false;
+    const color = sup ? 'var(--green)' : 'var(--text-muted)';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+      <input type="checkbox" id="nodeChk${i}" ${sup ? 'checked' : 'disabled'}>
+      <span style="flex:1;font-size:0.85rem;color:${color};">
+        ${n.name||n.tag||'unnamed'} [${n.type||'?'}]${!sup ? ' - ' + (n.error||'unsupported') : ''}
+      </span>
+    </div>`;
+  }).join('');
+}
+
+async function importConfirm() {
+  const selected = [];
+  importNodes.forEach((n, i) => {
+    if (document.getElementById('nodeChk'+i)?.checked) selected.push(n);
+  });
+  if (selected.length === 0) return showToast('Select at least one node', 'error');
+  try {
+    await apiPost('/api/proxy/import/confirm', {nodes: selected});
+    showToast('Imported ' + selected.length + ' nodes', 'success');
+    document.getElementById('previewCard').style.display = 'none';
+    refreshProxy();
+  } catch(e) { showToast('Failed: ' + e.message, 'error'); }
+}
+
+function refreshAll() { refreshStatus(); refreshClients(); }
+
+// Keyboard enter on token input
+document.getElementById('tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') auth(); });
+
+// Auto-refresh status every 30s
+setInterval(() => {
+  if (document.getElementById('authLayer').style.display !== 'flex' &&
+      document.getElementById('tab-status').classList.contains('active')) {
+    refreshStatus(); refreshClients();
+  }
+  if (document.getElementById('tab-proxy').classList.contains('active')) {
+    refreshProxy();
+  }
+}, 30000);
+</script>
+</body>
+</html>

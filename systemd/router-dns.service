@@ -1,0 +1,15 @@
+[Unit]
+Description=Router DHCP and DNS (dnsmasq)
+After=router-firewall.service router-ap.service
+Requires=router-firewall.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/sbin/dnsmasq --test --conf-file=/etc/dnsmasq.d/router.conf
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.d/router.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

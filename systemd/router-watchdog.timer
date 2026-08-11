@@ -1,0 +1,10 @@
+[Unit]
+Description=Router Watchdog Health Check Timer (every 5min)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

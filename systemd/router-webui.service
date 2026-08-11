@@ -1,0 +1,15 @@
+[Unit]
+Description=Router WebUI Management Panel (FastAPI)
+After=network-online.target router-firewall.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/router-webui
+ExecStart=/opt/router-webui/.venv/bin/uvicorn main:app --host 192.168.50.1 --port 8080
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

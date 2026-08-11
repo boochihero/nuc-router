@@ -1,0 +1,15 @@
+[Unit]
+Description=Router WiFi AP (hostapd)
+After=router-firewall.service
+Requires=router-firewall.service
+
+[Service]
+Type=forking
+ExecStartPre=/usr/sbin/rfkill unblock wifi
+ExecStart=/usr/sbin/hostapd /etc/hostapd/hostapd.conf
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet router {
+    chain forward {
+        type filter hook forward priority filter; policy accept;
+        iifname "eno1" oifname "wlp0s20f3" ct state related,established accept
+        iifname "wlp0s20f3" oifname "eno1" accept
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        oifname "eno1" masquerade
+    }
+
+    chain prerouting_proxy {
+        type filter hook prerouting priority mangle; policy accept;
+        ip daddr { 127.0.0.0/8, 192.168.50.0/24 } return
+        iifname != "wlp0s20f3" return
+        tcp dport { 22, 8080 } return
+        meta l4proto tcp tproxy to 127.0.0.1:12345
+        meta l4proto udp tproxy to 127.0.0.1:12345
+    }
+}

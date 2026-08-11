@@ -1,0 +1,99 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "tag": "tproxy",
+      "port": 12345,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp,udp",
+        "followRedirect": true
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tproxy": "tproxy",
+          "mark": 1
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "primary",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{{PRIMARY_ADDRESS}}",
+            "port": 443,
+            "users": [
+              {
+                "id": "{{PRIMARY_UUID}}",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "{{PRIMARY_WS_PATH}}"
+        }
+      }
+    },
+    {
+      "tag": "backup",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{{BACKUP_ADDRESS}}",
+            "port": 443,
+            "users": [
+              {
+                "id": "{{BACKUP_UUID}}",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "{{BACKUP_SERVER_NAME}}",
+          "publicKey": "{{BACKUP_PUBLIC_KEY}}",
+          "shortId": "{{BACKUP_SHORT_ID}}"
+        }
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "blocked",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["tproxy"],
+        "port": 12345,
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "targetTag": "primary"
+      }
+    ]
+  }
+}
