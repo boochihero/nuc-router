@@ -8,8 +8,14 @@ Before=router-ap.service router-dns.service router-xray.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/sbin/nft -f /etc/nftables.d/router.nft
+ExecStartPost=/sbin/ip rule add fwmark 1 lookup 100 2>/dev/null || true
+ExecStartPost=/sbin/ip route add local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
 ExecReload=/usr/sbin/nft -f /etc/nftables.d/router.nft
+ExecReload=/sbin/ip rule add fwmark 1 lookup 100 2>/dev/null || true
+ExecReload=/sbin/ip route add local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
 ExecStop=/usr/sbin/nft flush ruleset
+ExecStop=/sbin/ip rule del fwmark 1 lookup 100 2>/dev/null || true
+ExecStop=/sbin/ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null || true
 
 [Install]
 WantedBy=multi-user.target
