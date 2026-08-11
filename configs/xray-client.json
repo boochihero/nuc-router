@@ -38,6 +38,12 @@
       {
         "type": "field",
         "inboundTag": ["tproxy"],
+        "domain": ["geosite:bing"],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "inboundTag": ["tproxy"],
         "domain": ["geosite:cn"],
         "outboundTag": "direct"
       },
