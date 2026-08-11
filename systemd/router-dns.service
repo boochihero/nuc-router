@@ -4,7 +4,8 @@ After=router-firewall.service router-ap.service
 Requires=router-firewall.service
 
 [Service]
-Type=forking
+# dnsmasq runs in foreground (--keep-in-foreground); Type=simple to match
+Type=simple
 ExecStartPre=/usr/sbin/dnsmasq --test --conf-file=/etc/dnsmasq.d/router.conf
 ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.d/router.conf
 ExecReload=/bin/kill -HUP $MAINPID
