@@ -265,11 +265,11 @@ if [ "$DRY_RUN" = false ]; then
     sudo mkdir -p /opt/router-webui/static
     sudo cp "$WEBUI_DIR/static/index.html" /opt/router-webui/static/
 
-    # Create Python venv and install deps
-    python3 -m venv /opt/router-webui/.venv
+    # Create Python venv and install deps (service runs as root, so venv is root-owned)
+    sudo python3 -m venv /opt/router-webui/.venv
     # pip 国内镜像（清华源），可用 PIP_INDEX_URL 覆盖
     PIP_INDEX_URL="${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}"
-    /opt/router-webui/.venv/bin/pip install --quiet -r /opt/router-webui/requirements.txt --index-url "$PIP_INDEX_URL"
+    sudo env PIP_INDEX_URL="$PIP_INDEX_URL" /opt/router-webui/.venv/bin/pip install --quiet -r /opt/router-webui/requirements.txt --index-url "$PIP_INDEX_URL"
 
     # Generate secret token
     sudo mkdir -p /etc/router-webui/state
