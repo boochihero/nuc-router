@@ -87,12 +87,7 @@
       {
         "type": "field",
         "inboundTag": ["tproxy"],
-        "port": 12345,
         "outboundTag": "direct"
-      },
-      {
-        "type": "field",
-        "targetTag": "primary"
       }
     ]
   }
