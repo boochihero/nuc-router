@@ -317,7 +317,7 @@ async def proxy_config(request: Request, token: str = Header(None, alias="X-Auth
     os.unlink(tmp_path)
 
     # Reload xray
-    _run(["systemctl", "reload", "router-xray"], timeout=10)
+    _run(["systemctl", "restart", "router-xray"], timeout=10)
 
     return {"status": "ok", "message": "Xray config saved and reloaded"}
 
@@ -366,7 +366,7 @@ async def activate_node(node_id: str, token: str = Header(None, alias="X-Auth-To
     _save_json(XRAY_CONFIG, xconfig)
     _write_state("active_node", node_id)
 
-    _run(["systemctl", "reload", "router-xray"], timeout=10)
+    _run(["systemctl", "restart", "router-xray"], timeout=10)
     return {"status": "ok", "active_node": node_id}
 
 
@@ -508,7 +508,7 @@ async def proxy_import_confirm(request: Request, token: str = Header(None, alias
     _save_json(XRAY_CONFIG, test_config)
     os.unlink(tmp_path)
 
-    _run(["systemctl", "reload", "router-xray"], timeout=10)
+    _run(["systemctl", "restart", "router-xray"], timeout=10)
 
     return {"status": "ok", "imported": len(new_outbounds), "nodes": new_outbounds}
 
