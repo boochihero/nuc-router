@@ -9,6 +9,8 @@ Requires=router-firewall.service
 Type=simple
 ExecStartPre=/usr/sbin/rfkill unblock wifi
 ExecStart=/usr/sbin/hostapd /etc/hostapd/hostapd.conf
+# Assign the AP subnet gateway IP once the interface is up (idempotent)
+ExecStartPost=/bin/sh -c 'sleep 2; ip addr replace 192.168.50.1/24 dev wlp0s20f3 2>/dev/null || true'
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5s
