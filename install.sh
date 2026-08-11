@@ -110,7 +110,9 @@ fi
 
 if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" = false ]; then
     log_warn "Not running as root. Will use sudo for privileged operations."
-    sudo -v || { log_error "sudo access required"; exit 1; }
+    # Use -n (non-interactive) so the check works headless with NOPASSWD; sudo -v
+    # still demands a password/tty in some sudoers setups and would fail here.
+    sudo -n true || { log_error "sudo access required (NOPASSWD not configured)"; exit 1; }
 fi
 
 log_info "Environment OK"
