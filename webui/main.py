@@ -340,12 +340,27 @@ async def activate_node(node_id: str, token: str = Header(None, alias="X-Auth-To
     # Update routing to use this node as primary
     routing = xconfig.get("routing", {})
     rules = routing.get("rules", [])
+    updated = False
     for rule in rules:
-        if rule.get("type") == "field" and "targetTag" not in rule:
-            rule["targetTag"] = node_id
+        if rule.get("type") == "field" and rule.get("inboundTag") == ["tproxy"]:
+            rule["outboundTag"] = node_id
+            rule.pop("targetTag", None)  # not a valid xray field
+            updated = True
 
-    if not any(r.get("targetTag") == node_id for r in rules if isinstance(r, dict)):
-        rules.append({"type": "field", "targetTag": node_id})
+    if not any(r.get("outboundTag") == node_id for r in rules if isinstance(r, dict)):
+        rules.append({"type": "field", "inboundTag": ["tproxy"], "outboundTag": node_id})
+        updated = True
+
+    if not updated:
+        raise HTTPException(status_code=400, detail="No tproxy routing rule found")
+
+    # Validate config before saving (broken config kills xray on reload)
+    tmp_path = "/tmp/xray-activate-test.json"
+    _save_json(tmp_path, xconfig)
+    rc, out, err = _run(["xray", "run", "-test", "-config", tmp_path], timeout=10)
+    os.unlink(tmp_path)
+    if rc != 0:
+        raise HTTPException(status_code=400, detail=f"Config validation failed: {err}")
 
     xconfig["routing"] = routing
     _save_json(XRAY_CONFIG, xconfig)
