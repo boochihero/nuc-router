@@ -337,12 +337,18 @@ async def activate_node(node_id: str, token: str = Header(None, alias="X-Auth-To
     if not found:
         raise HTTPException(status_code=404, detail=f"Node '{node_id}' not found")
 
-    # Update routing to use this node as primary
+    # Update the DEFAULT routing rule (no domain/ip condition) to use this node.
+    # CN-direct rules (geosite:cn / geoip:cn) must stay on direct.
     routing = xconfig.get("routing", {})
     rules = routing.get("rules", [])
     updated = False
     for rule in rules:
-        if rule.get("type") == "field" and rule.get("inboundTag") == ["tproxy"]:
+        if (
+            rule.get("type") == "field"
+            and rule.get("inboundTag") == ["tproxy"]
+            and "domain" not in rule
+            and "ip" not in rule
+        ):
             rule["outboundTag"] = node_id
             rule.pop("targetTag", None)  # not a valid xray field
             updated = True

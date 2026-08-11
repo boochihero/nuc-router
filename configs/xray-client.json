@@ -11,6 +11,10 @@
         "network": "tcp,udp",
         "followRedirect": true
       },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls"]
+      },
       "streamSettings": {
         "sockopt": {
           "tproxy": "tproxy",
@@ -31,6 +35,18 @@
   ],
   "routing": {
     "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["tproxy"],
+        "domain": ["geosite:cn"],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "inboundTag": ["tproxy"],
+        "ip": ["geoip:cn", "geoip:private"],
+        "outboundTag": "direct"
+      },
       {
         "type": "field",
         "inboundTag": ["tproxy"],
