@@ -133,12 +133,46 @@ if [ "$DRY_RUN" = false ]; then
         curl \
         jq
 
-    # Install xray via official script
+    # Install xray (China-network friendly: mirror list + manual install)
+    install_xray() {
+        local version="${XRAY_VERSION:-1.8.23}"
+        local arch="64"
+        local tmpdir
+        tmpdir=$(mktemp -d)
+        # 镜像前缀列表（国内可访问的 GitHub 加速代理），支持 XRAY_MIRROR 环境变量覆盖
+        local mirrors=(
+            "${XRAY_MIRROR:-https://ghfast.top/https://github.com}"
+            "https://gh-proxy.com/https://github.com"
+            "https://github.com"
+        )
+        local url=""
+        for base in "${mirrors[@]}"; do
+            url="${base}/XTLS/Xray-core/releases/download/v${version}/Xray-linux-${arch}.zip"
+            log_info "  Trying mirror: ${base}"
+            if curl -fsSL --connect-timeout 10 --max-time 120 -o "${tmpdir}/xray.zip" "$url"; then
+                log_info "  Download OK from ${base}"
+                break
+            fi
+        done
+        if [ ! -s "${tmpdir}/xray.zip" ]; then
+            log_warn "Xray download failed from all mirrors. Install manually later."
+            rm -rf "$tmpdir"
+            return 1
+        fi
+        # 用 python3 解压（避免依赖 unzip）
+        python3 -c "import zipfile; zipfile.ZipFile('${tmpdir}/xray.zip').extractall('${tmpdir}/x')"
+        sudo install -m 755 "${tmpdir}/x/xray" /usr/local/bin/xray
+        sudo mkdir -p /usr/local/share/xray
+        sudo install -m 644 "${tmpdir}/x/geoip.dat" "${tmpdir}/x/geosite.dat" /usr/local/share/xray/ 2>/dev/null || true
+        rm -rf "$tmpdir"
+        log_info "Xray installed: $(/usr/local/bin/xray version 2>/dev/null | head -1 || echo 'xray') "
+    }
+
     if ! command -v xray &>/dev/null; then
-        log_info "Installing Xray..."
-        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install --version 1.8.23 || true
+        log_info "Installing Xray (via China-friendly mirrors)..."
+        install_xray
         if ! command -v xray &>/dev/null; then
-            log_warn "Xray install script failed. Please install xray manually."
+            log_warn "Xray install failed. Please install xray manually."
         fi
     else
         log_info "Xray already installed: $(xray version 2>/dev/null || echo 'unknown')"
@@ -230,7 +264,9 @@ if [ "$DRY_RUN" = false ]; then
 
     # Create Python venv and install deps
     python3 -m venv /opt/router-webui/.venv
-    /opt/router-webui/.venv/bin/pip install --quiet -r /opt/router-webui/requirements.txt
+    # pip 国内镜像（清华源），可用 PIP_INDEX_URL 覆盖
+    PIP_INDEX_URL="${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+    /opt/router-webui/.venv/bin/pip install --quiet -r /opt/router-webui/requirements.txt --index-url "$PIP_INDEX_URL"
 
     # Generate secret token
     sudo mkdir -p /etc/router-webui/state
