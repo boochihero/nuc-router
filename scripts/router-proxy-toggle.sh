@@ -33,7 +33,7 @@ table inet router {
         type filter hook prerouting priority mangle; policy accept;
         ip daddr { 127.0.0.0/8, 192.168.50.0/24 } return
         iifname != "wlp0s20f3" return
-        tcp dport { 22, 8080 } return
+        tcp dport { 22, 80 } return
         meta l4proto tcp tproxy to 127.0.0.1:12345
         meta l4proto udp tproxy to 127.0.0.1:12345
     }

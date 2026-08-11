@@ -374,7 +374,7 @@ if [ "$DRY_RUN" = false ]; then
     log_info "  Deployment Complete!"
     log_info "=============================================="
     echo ""
-    log_info "WebUI:  http://192.168.50.1:8080"
+    log_info "WebUI:  http://192.168.50.1"
     log_info "Token:  $TOKEN"
     log_info "SSID:   $SSID"
     echo ""

@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 User=root
 WorkingDirectory=/opt/router-webui
-ExecStart=/opt/router-webui/.venv/bin/uvicorn main:app --host 192.168.50.1 --port 8080
+ExecStart=/opt/router-webui/.venv/bin/uvicorn main:app --host 192.168.50.1 --port 80
 Restart=on-failure
 RestartSec=5s
 
