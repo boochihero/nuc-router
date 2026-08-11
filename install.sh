@@ -82,6 +82,7 @@ needs_cp() {
         echo "cp $*"
         return 0
     fi
+    sudo mkdir -p "$(dirname "$2")"
     sudo cp "$@"
 }
 
