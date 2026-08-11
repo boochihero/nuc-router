@@ -19,7 +19,7 @@ table inet router {
         ip daddr { 127.0.0.0/8, 192.168.50.0/24 } return
         iifname != "wlp0s20f3" return
         tcp dport { 22, 8080 } return
-        udp dport { 53, 67, 68 } return
+        udp dport { 53, 67, 68, 5353 } return
         meta l4proto tcp tproxy ip to 127.0.0.1:12345
         meta l4proto udp tproxy ip to 127.0.0.1:12345
     }
