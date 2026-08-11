@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DRY_RUN=false
-SSID="NUC-Router-5G"
+SSID="NUC-Router"
 PASSWORD=""
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -28,7 +28,7 @@ Usage: $0 [OPTIONS]
 
 Options:
   --dry-run       Preview mode, do not execute changes
-  --ssid NAME     WiFi SSID (default: NUC-Router-5G)
+  --ssid NAME     WiFi SSID (default: NUC-Router)
   --password PWD  WiFi WPA2 password (required, min 8 chars)
   --help          Show this help
 
