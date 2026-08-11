@@ -8,11 +8,11 @@ BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP"
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
 log "Creating backup: $BACKUP_DIR"
-mkdir -p "$BACKUP_DIR"
+sudo mkdir -p "$BACKUP_DIR"
 
 copy_if_exists() {
     local src="$1" dst="$2"
-    [ -e "$src" ] && cp -r "$src" "$dst" && log "  backed up: $src" || log "  skipped (not found): $src"
+    [ -e "$src" ] && sudo cp -r "$src" "$dst" && log "  backed up: $src" || log "  skipped (not found): $src"
 }
 
 copy_if_exists /etc/hostapd/hostapd.conf       "$BACKUP_DIR/hostapd.conf"
@@ -28,7 +28,7 @@ if [ "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
     log "Backup completed: $BACKUP_DIR"
 else
     log "WARNING: No configuration files found to back up"
-    rmdir "$BACKUP_DIR" 2>/dev/null || true
+    sudo rmdir "$BACKUP_DIR" 2>/dev/null || true
 fi
 
 echo "$BACKUP_DIR"
